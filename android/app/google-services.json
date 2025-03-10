@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "855085801374",
+    "project_id": "chefai-9dac5",
+    "storage_bucket": "chefai-9dac5.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:855085801374:android:89ead31ab975577c9a008f",
+        "android_client_info": {
+          "package_name": "com.example.flutter_application_1"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "855085801374-duc216clhrq3dln9leuoc7e3nbcrdvrl.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBioEuxYehSUE4J6hwNqZrNhIavSOQPPnY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "855085801374-duc216clhrq3dln9leuoc7e3nbcrdvrl.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -32,7 +32,7 @@ This project is a starting point for ChefAI, a Flutter application.
     <td><strong>Recipe by Name</strong></td>
   </tr>
   <tr>
-    <td><img src="https://github.com/user-attachments/assets/07ed4c77-a710-4543-968a-e55ebbb46759" alt="Home Screen" width="200"/></td>
+    <td><img src="https://github.com/labdhi02/ChefAI/blob/main/Screenshot%202025-04-23%20104837.png" alt="Home Screen" width="200"/></td>
     <td><img src="https://github.com/user-attachments/assets/01e9c721-e6f9-4e8a-b5eb-c79f700432bf" alt="Recipe Search" width="200"/></td>
     <td><img src="https://github.com/user-attachments/assets/55131309-da83-4fb6-8b54-1c295763e61d" alt="Recipe by Ingredients" width="200"/></td>
     <td><img src="https://github.com/user-attachments/assets/4a68402e-83cd-4200-b701-4ecc563dfd96" alt="Recipe by Name" width="200"/></td>

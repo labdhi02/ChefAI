@@ -27,15 +27,15 @@ This project is a starting point for ChefAI, a Flutter application.
 <table>
   <tr>
     <td><strong>Home Screen</strong></td>
-    <td><strong>Recipe Search</strong></td>
+    <td><strong>Craete account Screen</strong></td>
     <td><strong>Recipe by Ingredients</strong></td>
-    <td><strong>Recipe by Name</strong></td>
+    <td><strong>Favourites recipes</strong></td>
   </tr>
   <tr>
-    <td><img src="https://github.com/labdhi02/ChefAI/blob/main/Screenshot%202025-04-23%20104837.png" alt="Home Screen" width="200"/></td>
-    <td><img src="https://github.com/user-attachments/assets/01e9c721-e6f9-4e8a-b5eb-c79f700432bf" alt="Recipe Search" width="200"/></td>
-    <td><img src="https://github.com/user-attachments/assets/55131309-da83-4fb6-8b54-1c295763e61d" alt="Recipe by Ingredients" width="200"/></td>
-    <td><img src="https://github.com/user-attachments/assets/4a68402e-83cd-4200-b701-4ecc563dfd96" alt="Recipe by Name" width="200"/></td>
+    <td><img src="https://github.com/labdhi02/ChefAI/blob/main/Screenshot%202025-04-23%20104953.png" alt="Home Screen" width="200"/></td>
+    <td><img src="https://github.com/labdhi02/ChefAI/blob/main/Screenshot%202025-04-23%20104953.png" alt="Craete account Screen" width="200"/></td>
+    <td><img src="https://github.com/labdhi02/ChefAI/blob/main/Screenshot%202025-04-23%20105320.png" alt="Recipe by Ingredients" width="200"/></td>
+    <td><img src="https://github.com/labdhi02/ChefAI/blob/main/Screenshot%202025-04-23%20105341.png" alt="Favourites recipes" width="200"/></td>
   </tr>
 </table>
 

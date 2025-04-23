@@ -1,6 +1,10 @@
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:google_generative_ai/google_generative_ai.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'login_page.dart';
+import 'pages/favorites_page.dart';
+import 'services/favorite_service.dart';
+import 'services/recipe_service.dart';
+import 'widgets/recipe_form.dart';
 
 class Generator extends StatefulWidget {
   const Generator({super.key});
@@ -14,28 +18,38 @@ class Generator extends StatefulWidget {
 class GeneratorState extends State<Generator> {
   String generatedText = '';
   bool isLoading = false;
-  late final GenerativeModel _model;
   final TextEditingController _controller = TextEditingController();
-  late Future<void> _apiKeyFuture;
+  final FavoriteService _favoriteService = FavoriteService();
+  final RecipeService _recipeService = RecipeService();
+  Map<String, dynamic>? _currentRecipe;
+
+  String selectedComplexity = 'Any';
+  String selectedTime = 'Any';
+
+  final List<String> complexityLevels = ['Any', 'Easy', 'Medium', 'Hard'];
+  final List<String> timeRanges = [
+    'Any',
+    '15 minutes',
+    '30 minutes',
+    '45 minutes',
+    '1 hour',
+    '1+ hour'
+  ];
+
+  late FocusNode _ingredientsFocusNode;
 
   @override
   void initState() {
     super.initState();
-    _apiKeyFuture = _getAPIkey();
+    _recipeService.initialize();
+    _ingredientsFocusNode = FocusNode();
   }
 
-  Future<void> _getAPIkey() async {
-    // Directly assign the API key
-    var apikey = 'AIzaSyDhdSEMxcJQ-PelciGQ9_H-J73kKvQQWmY';
-
-    _model = GenerativeModel(
-      model: 'models/gemini-1.5-pro', // Use the Gemini 1.5 Pro model
-      apiKey: apikey,
-      safetySettings: [
-        SafetySetting(HarmCategory.harassment, HarmBlockThreshold.high),
-        SafetySetting(HarmCategory.hateSpeech, HarmBlockThreshold.high),
-      ],
-    );
+  @override
+  void dispose() {
+    _ingredientsFocusNode.dispose();
+    _controller.dispose();
+    super.dispose();
   }
 
   void _generateText() async {
@@ -45,24 +59,14 @@ class GeneratorState extends State<Generator> {
     });
 
     try {
-      // Step 1: Preprocess the user input
-      String preprocessingPrompt =
-          "You will be provided text with ingredients from a user that hopes to cook something from this. Please process the text provided by the user and return a list in the following format: Ingredient A, Ingredient B, Ingredient C, .... If no ingredients that can be used to realistically create food are provided, please return 'None'. Please return no additional text apart from this list in your response. Please find the user provided text here: ";
-
-      String preprocessingInput = preprocessingPrompt + _controller.text;
-      final preContent = [Content.text(preprocessingInput)];
-      final ingredientList = await _model.generateContent(preContent);
-
-      // Step 2: Generate the recipe
-      String prompt =
-          "You are an expert cook with detailed knowledge of making recipes. Generate a response in this exact format:\n\nRecipe Name:\n[Name]\n\nCooking Time:\n[Time]\n\nComplexity:\n[Easy/Medium/Hard]\n\nIngredients:\n[List]\n\nSteps:\n[Numbered steps]";
-
-      String finalInput = prompt + ingredientList.text!;
-      final content = [Content.text(finalInput)];
-      final recipe = await _model.generateContent(content);
+      _currentRecipe = await _recipeService.generateRecipe(
+        _controller.text,
+        selectedComplexity,
+        selectedTime,
+      );
 
       setState(() {
-        generatedText = recipe.text!;
+        generatedText = _formatRecipeText(_currentRecipe!);
         isLoading = false;
       });
     } catch (e) {
@@ -73,149 +77,285 @@ class GeneratorState extends State<Generator> {
     }
   }
 
+  String _formatRecipeText(Map<String, dynamic> recipe) {
+    final StringBuffer buffer = StringBuffer();
+
+    // Title is displayed separately in the UI
+
+    buffer.writeln('🕒 Cooking Time:');
+    buffer.writeln(recipe['cookingTime']);
+    buffer.writeln();
+
+    buffer.writeln('📊 Complexity:');
+    buffer.writeln(recipe['complexity']);
+    buffer.writeln();
+
+    buffer.writeln('🥘 Ingredients:');
+    for (String ingredient in recipe['ingredients']) {
+      buffer.writeln('• $ingredient');
+    }
+    buffer.writeln();
+
+    buffer.writeln('📝 Instructions:');
+    buffer.writeln(recipe['instructions']);
+
+    if (recipe['tips']?.isNotEmpty ?? false) {
+      buffer.writeln();
+      buffer.writeln('💡 Tips:');
+      buffer.writeln(recipe['tips']);
+    }
+
+    return buffer.toString();
+  }
+
+  Widget _buildRecipeDisplay() {
+    return SingleChildScrollView(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (_currentRecipe != null)
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    _currentRecipe!['title'] ?? '',
+                    style: TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+                StreamBuilder<bool>(
+                  stream: _favoriteService
+                      .isFavoriteStream(_currentRecipe!['title']),
+                  builder: (context, snapshot) {
+                    final isFavorite = snapshot.data ?? false;
+                    return IconButton(
+                      icon: Icon(
+                        isFavorite ? Icons.favorite : Icons.favorite_border,
+                        color: isFavorite ? Colors.red : null,
+                      ),
+                      onPressed: () =>
+                          _favoriteService.toggleFavorite(_currentRecipe!),
+                    );
+                  },
+                ),
+              ],
+            ),
+          SelectableText(
+            generatedText,
+            style: TextStyle(
+              fontSize: 16,
+              height: 1.5,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [Color(0xFF1A237E), Color(0xFF64B5F6)],
-          ),
-        ),
-        child: SafeArea(
-          child: Column(
-            children: <Widget>[
-              AppBar(
-                title: Row(
-                  children: [
-                    Icon(Icons.restaurant_menu, size: 30),
-                    SizedBox(width: 10),
-                    Text(
-                      'ChefAI',
-                      style: TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                        fontFamily: 'Roboto',
-                      ),
-                    ),
-                  ],
+    return GestureDetector(
+      onTap: () {
+        FocusScope.of(context).unfocus();
+      },
+      child: Scaffold(
+        appBar: AppBar(
+          title: Row(
+            children: const [
+              Icon(Icons.restaurant_menu, size: 30, color: Color(0xFFFF8F00)),
+              SizedBox(width: 10),
+              Text(
+                'Chef AI',
+                style: TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                  fontFamily: 'Roboto',
+                  color: Color(0xFF795548),
                 ),
-                backgroundColor: Colors.transparent,
-                elevation: 0,
-                actions: [
-                  IconButton(
-                    icon: Icon(Icons.logout),
-                    onPressed: () async {
-                      await FirebaseAuth.instance.signOut();
-                      Navigator.of(context).pushReplacementNamed('/login');
-                    },
-                  ),
-                ],
               ),
-              Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.all(16.0),
+            ],
+          ),
+          backgroundColor: Colors.white,
+          elevation: 2,
+          iconTheme: const IconThemeData(color: Color(0xFF795548)),
+          actions: [
+            if (_currentRecipe != null)
+              StreamBuilder<bool>(
+                stream:
+                    _favoriteService.isFavoriteStream(_currentRecipe!['title']),
+                builder: (context, snapshot) {
+                  final isFavorite = snapshot.data ?? false;
+                  return IconButton(
+                    icon: Icon(
+                      isFavorite ? Icons.favorite : Icons.favorite_border,
+                      color: isFavorite ? Colors.red : Color(0xFF795548),
+                    ),
+                    onPressed: () {
+                      _favoriteService.toggleFavorite(_currentRecipe!);
+                    },
+                  );
+                },
+              ),
+            IconButton(
+              icon: const Icon(Icons.logout, color: Color(0xFF795548)),
+              onPressed: () async {
+                await FirebaseAuth.instance.signOut();
+                Navigator.of(context).pushReplacement(
+                  MaterialPageRoute(builder: (context) => const LoginPage()),
+                );
+              },
+            ),
+          ],
+        ),
+        drawer: Drawer(
+          child: Container(
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [Color(0xFFFFF8E1), Color(0xFFFFECB3)],
+              ),
+            ),
+            child: ListView(
+              padding: EdgeInsets.zero,
+              children: [
+                DrawerHeader(
+                  decoration: const BoxDecoration(color: Color(0xFFFF8F00)),
                   child: Column(
-                    children: <Widget>[
-                      Card(
-                        elevation: 8,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(15),
-                        ),
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 16.0,
-                            vertical: 8.0,
-                          ),
-                          child: Row(
-                            children: [
-                              Icon(Icons.shopping_basket,
-                                  color: Color(0xFF1A237E)),
-                              SizedBox(width: 10),
-                              Expanded(
-                                child: TextField(
-                                  controller: _controller,
-                                  decoration: InputDecoration(
-                                    hintText:
-                                        'Enter ingredients (comma separated)',
-                                    border: InputBorder.none,
-                                  ),
-                                ),
-                              ),
-                              FutureBuilder<void>(
-                                future: _apiKeyFuture,
-                                builder: (context, snapshot) {
-                                  return ElevatedButton.icon(
-                                    icon: Icon(Icons.restaurant),
-                                    label: Text(
-                                      snapshot.connectionState ==
-                                              ConnectionState.done
-                                          ? 'Generate Recipe'
-                                          : 'Loading...',
-                                    ),
-                                    onPressed: snapshot.connectionState ==
-                                                ConnectionState.done &&
-                                            !isLoading
-                                        ? _generateText
-                                        : null,
-                                    style: ElevatedButton.styleFrom(
-                                      backgroundColor: Color(0xFF1A237E),
-                                      padding: EdgeInsets.symmetric(
-                                          horizontal: 20, vertical: 12),
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(10),
-                                      ),
-                                    ),
-                                  );
-                                },
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                      SizedBox(height: 20),
-                      Expanded(
-                        child: Card(
-                          elevation: 8,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(15),
-                          ),
-                          child: Container(
-                            width: double.infinity,
-                            padding: EdgeInsets.all(16),
-                            child: isLoading
-                                ? Center(
-                                    child: Column(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        CircularProgressIndicator(),
-                                        SizedBox(height: 16),
-                                        Text('Cooking up your recipe...'),
-                                      ],
-                                    ),
-                                  )
-                                : SingleChildScrollView(
-                                    child: SelectableText(
-                                      generatedText,
-                                      style: TextStyle(
-                                        fontSize: 16,
-                                        height: 1.5,
-                                      ),
-                                    ),
-                                  ),
-                          ),
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: const [
+                      Icon(Icons.restaurant_rounded,
+                          size: 60, color: Colors.white),
+                      SizedBox(height: 10),
+                      Text(
+                        'Chef AI',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
                         ),
                       ),
                     ],
                   ),
                 ),
+                _buildDrawerItem(
+                    Icons.home, 'Home', () => Navigator.pop(context)),
+                _buildDrawerItem(
+                  Icons.favorite,
+                  'Favorites',
+                  () {
+                    Navigator.pop(context);
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => FavoritesPage()),
+                    );
+                  },
+                ),
+                _buildDrawerItem(
+                  Icons.logout,
+                  'Logout',
+                  () async {
+                    await FirebaseAuth.instance.signOut();
+                    Navigator.of(context).pushReplacement(
+                      MaterialPageRoute(
+                          builder: (context) => const LoginPage()),
+                    );
+                  },
+                ),
+              ],
+            ),
+          ),
+        ),
+        body: Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [Color(0xFFFFF8E1), Color(0xFFFFECB3)],
+            ),
+          ),
+          child: SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                children: [
+                  Focus(
+                    child: RecipeForm(
+                      controller: _controller,
+                      selectedComplexity: selectedComplexity,
+                      selectedTime: selectedTime,
+                      complexityLevels: complexityLevels,
+                      timeRanges: timeRanges,
+                      onComplexityChanged: (value) =>
+                          setState(() => selectedComplexity = value),
+                      onTimeChanged: (value) =>
+                          setState(() => selectedTime = value),
+                      onSubmit: _generateText,
+                      isLoading: isLoading,
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  Expanded(
+                    child: Card(
+                      elevation: 8,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(15),
+                      ),
+                      child: Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(15),
+                        ),
+                        child: isLoading
+                            ? const Center(
+                                child: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    CircularProgressIndicator(
+                                      valueColor: AlwaysStoppedAnimation<Color>(
+                                        Color(0xFFFF8F00),
+                                      ),
+                                    ),
+                                    SizedBox(height: 16),
+                                    Text(
+                                      'Cooking up your recipe...',
+                                      style: TextStyle(
+                                        color: Color(0xFF795548),
+                                        fontSize: 16,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              )
+                            : _buildRecipeDisplay(),
+                      ),
+                    ),
+                  ),
+                ],
               ),
-            ],
+            ),
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildDrawerItem(IconData icon, String title, VoidCallback onTap) {
+    return ListTile(
+      leading: Icon(icon, color: const Color(0xFF795548)),
+      title: Text(
+        title,
+        style: const TextStyle(
+          color: Color(0xFF795548),
+          fontSize: 16,
+          fontWeight: FontWeight.w500,
+        ),
+      ),
+      onTap: onTap,
     );
   }
 }

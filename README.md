@@ -26,13 +26,13 @@ This project is a starting point for ChefAI, a Flutter application.
 
 <table>
   <tr>
-    <td><strong>Home Screen</strong></td>
+    <td><strong>Login screen</strong></td>
     <td><strong>Craete account Screen</strong></td>
     <td><strong>Recipe by Ingredients</strong></td>
     <td><strong>Favourites recipes</strong></td>
   </tr>
   <tr>
-    <td><img src="https://github.com/labdhi02/ChefAI/blob/main/Screenshot%202025-04-23%20104953.png" alt="Home Screen" width="200"/></td>
+    <td><img src="https://github.com/labdhi02/ChefAI/blob/main/Screenshot%202025-04-23%20104837.png" alt="Home Screen" width="200"/></td>
     <td><img src="https://github.com/labdhi02/ChefAI/blob/main/Screenshot%202025-04-23%20104953.png" alt="Craete account Screen" width="200"/></td>
     <td><img src="https://github.com/labdhi02/ChefAI/blob/main/Screenshot%202025-04-23%20105320.png" alt="Recipe by Ingredients" width="200"/></td>
     <td><img src="https://github.com/labdhi02/ChefAI/blob/main/Screenshot%202025-04-23%20105341.png" alt="Favourites recipes" width="200"/></td>
